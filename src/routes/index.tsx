@@ -1,86 +1,158 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { useEffect, useState } from 'react'
+import { authClient } from '../lib/auth-client'
 
 export const Route = createFileRoute('/')({ component: App })
 
 function App() {
+  const session = authClient.useSession()
+  const navigate = useNavigate()
+  const [username, setUsername] = useState('')
+  const [password, setPassword] = useState('')
+  const [rememberMe, setRememberMe] = useState(true)
+  const [errorMessage, setErrorMessage] = useState('')
+  const [isSubmitting, setIsSubmitting] = useState(false)
+
+  const currentUser = session.data?.user
+
+  useEffect(() => {
+    if (currentUser) {
+      navigate({ to: '/dashboard' })
+    }
+  }, [currentUser, navigate])
+
+  async function handleSignIn(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    setErrorMessage('')
+    setIsSubmitting(true)
+
+    const { error } = await authClient.signIn.username({
+      username,
+      password,
+      rememberMe,
+    })
+
+    if (error) {
+      setErrorMessage(error.message ?? 'Unable to sign in.')
+      setIsSubmitting(false)
+      return
+    }
+
+    setPassword('')
+    setIsSubmitting(false)
+    navigate({ to: '/dashboard' })
+  }
+
+  async function handleSignOut() {
+    setErrorMessage('')
+    setIsSubmitting(true)
+
+    const { error } = await authClient.signOut()
+
+    if (error) {
+      setErrorMessage(error.message ?? 'Unable to sign out.')
+    }
+
+    setIsSubmitting(false)
+  }
+
   return (
-    <main className="page-wrap px-4 pb-8 pt-14">
-      <section className="island-shell rise-in relative overflow-hidden rounded-[2rem] px-6 py-10 sm:px-10 sm:py-14">
-        <div className="pointer-events-none absolute -left-20 -top-24 h-56 w-56 rounded-full bg-[radial-gradient(circle,rgba(79,184,178,0.32),transparent_66%)]" />
-        <div className="pointer-events-none absolute -bottom-20 -right-20 h-56 w-56 rounded-full bg-[radial-gradient(circle,rgba(47,106,74,0.18),transparent_66%)]" />
-        <p className="island-kicker mb-3">TanStack Start Base Template</p>
-        <h1 className="display-title mb-5 max-w-3xl text-4xl leading-[1.02] font-bold tracking-tight text-[var(--sea-ink)] sm:text-6xl">
-          Start simple, ship quickly.
-        </h1>
-        <p className="mb-8 max-w-2xl text-base text-[var(--sea-ink-soft)] sm:text-lg">
-          This base starter intentionally keeps things light: two routes, clean
-          structure, and the essentials you need to build from scratch.
-        </p>
-        <div className="flex flex-wrap gap-3">
-          <a
-            href="/about"
-            className="rounded-full border border-[rgba(50,143,151,0.3)] bg-[rgba(79,184,178,0.14)] px-5 py-2.5 text-sm font-semibold text-[var(--lagoon-deep)] no-underline transition hover:-translate-y-0.5 hover:bg-[rgba(79,184,178,0.24)]"
-          >
-            About This Starter
-          </a>
-          <a
-            href="https://tanstack.com/router"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="rounded-full border border-[rgba(23,58,64,0.2)] bg-white/50 px-5 py-2.5 text-sm font-semibold text-[var(--sea-ink)] no-underline transition hover:-translate-y-0.5 hover:border-[rgba(23,58,64,0.35)]"
-          >
-            Router Guide
-          </a>
+    <main className="auth-screen px-4 py-6 sm:px-6 sm:py-10">
+      <section className="auth-card rise-in mx-auto w-full max-w-sm overflow-hidden rounded-[2rem] px-6 py-7 sm:px-7 sm:py-8">
+        <div className="auth-brand mb-8">
+          <div className="auth-brand-mark">
+            <span />
+          </div>
+          <div>
+            <p className="island-kicker mb-2">POS Console</p>
+            <h1 className="display-title m-0 text-[2rem] leading-[1.02] font-bold text-[var(--sea-ink)]">
+              {currentUser ? 'Session ready' : 'Login'}
+            </h1>
+            <p className="mt-3 mb-0 text-sm leading-6 text-[var(--sea-ink-soft)]">
+              {currentUser
+                ? `Signed in as ${currentUser.name}.`
+                : 'Use your username and password to continue.'}
+            </p>
+          </div>
         </div>
-      </section>
 
-      <section className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {[
-          [
-            'Type-Safe Routing',
-            'Routes and links stay in sync across every page.',
-          ],
-          [
-            'Server Functions',
-            'Call server code from your UI without creating API boilerplate.',
-          ],
-          [
-            'Streaming by Default',
-            'Ship progressively rendered responses for faster experiences.',
-          ],
-          [
-            'Tailwind Native',
-            'Design quickly with utility-first styling and reusable tokens.',
-          ],
-        ].map(([title, desc], index) => (
-          <article
-            key={title}
-            className="island-shell feature-card rise-in rounded-2xl p-5"
-            style={{ animationDelay: `${index * 90 + 80}ms` }}
-          >
-            <h2 className="mb-2 text-base font-semibold text-[var(--sea-ink)]">
-              {title}
-            </h2>
-            <p className="m-0 text-sm text-[var(--sea-ink-soft)]">{desc}</p>
-          </article>
-        ))}
-      </section>
+        {currentUser ? (
+          <div className="space-y-4">
+            <div className="auth-user-card rounded-[1.6rem] p-5">
+              <p className="m-0 text-sm font-semibold text-[var(--sea-ink)]">
+                @{currentUser.username}
+              </p>
+              <p className="mt-1 mb-0 text-sm text-[var(--sea-ink-soft)]">
+                {currentUser.email}
+              </p>
+            </div>
 
-      <section className="island-shell mt-8 rounded-2xl p-6">
-        <p className="island-kicker mb-2">Quick Start</p>
-        <ul className="m-0 list-disc space-y-2 pl-5 text-sm text-[var(--sea-ink-soft)]">
-          <li>
-            Edit <code>src/routes/index.tsx</code> to customize the home page.
-          </li>
-          <li>
-            Update <code>src/components/Header.tsx</code> and{' '}
-            <code>src/components/Footer.tsx</code> for brand links.
-          </li>
-          <li>
-            Add routes in <code>src/routes</code> and tweak visual tokens in{' '}
-            <code>src/styles.css</code>.
-          </li>
-        </ul>
+            <button
+              type="button"
+              onClick={handleSignOut}
+              disabled={isSubmitting}
+              className="login-button inline-flex w-full items-center justify-center rounded-2xl px-5 py-3.5 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-70"
+            >
+              {isSubmitting ? 'Signing out...' : 'Sign Out'}
+            </button>
+          </div>
+        ) : (
+          <form className="space-y-4" onSubmit={handleSignIn}>
+            <label className="block">
+              <span className="mb-2 block text-sm font-semibold text-[var(--sea-ink)]">
+                Username
+              </span>
+              <input
+                type="text"
+                autoComplete="username"
+                value={username}
+                onChange={(event) => setUsername(event.target.value)}
+                placeholder="shiftlead"
+                className="login-input w-full rounded-2xl px-4 py-3.5 text-sm outline-none"
+                required
+              />
+            </label>
+
+            <label className="block">
+              <span className="mb-2 block text-sm font-semibold text-[var(--sea-ink)]">
+                Password
+              </span>
+              <input
+                type="password"
+                autoComplete="current-password"
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+                placeholder="Enter your password"
+                className="login-input w-full rounded-2xl px-4 py-3.5 text-sm outline-none"
+                required
+              />
+            </label>
+
+            <label className="flex items-center gap-2 pt-1 text-sm text-[var(--sea-ink-soft)]">
+              <input
+                type="checkbox"
+                checked={rememberMe}
+                onChange={(event) => setRememberMe(event.target.checked)}
+                className="h-4 w-4 rounded border-[var(--line)] accent-[var(--foreground)]"
+              />
+              Keep me signed in
+            </label>
+
+            {errorMessage ? (
+              <p className="m-0 rounded-2xl border border-[color-mix(in_oklab,#dc2626_22%,transparent)] bg-[color-mix(in_oklab,#dc2626_8%,transparent)] px-4 py-3 text-sm text-[#b91c1c] dark:text-[#fca5a5]">
+                {errorMessage}
+              </p>
+            ) : null}
+
+            <button
+              type="submit"
+              disabled={isSubmitting || session.isPending}
+              className="login-button inline-flex w-full items-center justify-center rounded-2xl px-5 py-3.5 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-70"
+            >
+              {isSubmitting ? 'Signing in...' : 'Sign In'}
+            </button>
+          </form>
+        )}
       </section>
     </main>
   )

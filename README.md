@@ -59,6 +59,14 @@ It is the same process as [Neon Launchpad](https://neon.new).
 > [!IMPORTANT]  
 > Claimable databases expire in 72 hours.
 
+## Auth Setup
+
+This app uses Better Auth with username + password sign-in.
+
+1. Set `DATABASE_URL`, `BETTER_AUTH_SECRET`, and `BETTER_AUTH_URL` in your environment.
+2. Generate or apply the Drizzle migration files.
+3. Run `pnpm auth:create-user --username <username> --password <password> --email <email>` to create the first login.
+
 
 ## T3Env
 
